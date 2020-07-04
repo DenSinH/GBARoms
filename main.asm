@@ -46,3 +46,24 @@ main:
 pixels:
         include './pixels.asm'
 
+astro_dodge:
+        include './chip8/roms/AstroDodge.ch8'
+
+pong:
+        include './chip8/roms/Pong.ch8'
+
+puzzle:
+        include './chip8/roms/Puzzle.ch8'
+
+rush_hour:
+        include './chip8/roms/RushHour.ch8'
+
+space_invaders:
+        include './chip8/roms/SpaceInvaders.ch8'
+
+tetris:
+        include './chip8/roms/Tetris.ch8'
+
+tic_tac_toe:
+        include './chip8/roms/TicTacToe.ch8'
+
