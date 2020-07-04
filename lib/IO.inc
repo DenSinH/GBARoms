@@ -1,4 +1,0 @@
-; IO registers addresses
-DISPCNT  = 0x04000000
-DISPSTAT = 0x04000004
-BG0CNT   = 0x04000008
