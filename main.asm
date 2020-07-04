@@ -3,33 +3,42 @@ format binary as 'gba'
 include './lib/constants.inc'
 include './lib/macros.inc'
 
+;           _____ ____          _____      _     _        ___
+;          / ____|  _ \   /\   / ____|    | |   (_)      / _ \
+;         | |  __| |_) | /  \ | |   ______| |__  _ _ __ | (_) |
+;         | | |_ |  _ < / /\ \| |  |______| '_ \| | '_ \ > _ <
+;         | |__| | |_) / ____ \ |____     | | | | | |_) | (_) |
+;          \_____|____/_/    \_\_____|    |_| |_|_| .__/ \___/
+;                                                 | |
+;                                                 |_|
+;
+;    We store Chip-8 RAM in iWRAM, starting at CHIP8_MEMORY
+;    We store the 16 general purpose registers in iWRAM, starting at CHIP8_REGISTERS
+;    We store the Chip-8 PC in r12, the highest GBA general purpose register that
+;       is not a "special" register
+;    In the PC, we store the address relative to CHIP8_MEMORY, not the actual address
+;    We store the Chip-8 SP in r11, the second highest GBA "non-special" register
+
+
 header:
         include './lib/header.inc'; I just borrowed this from JSMolka, thanks for that!
 
 main:
-        ; set DISPCNT to 0x0100: enable BG0
-        set_word r0, DISPCNT
-        set_half r1, 0x0403
-        strh r1, [r0]        ; set BGMode to mode 3, display BG2
+        include './init.asm'
 
         mov r3, 0x20
         mov r1, 0x0
-        y_loop:
+        _main_y_loop:
                 and r0, r3, #1
                 mov r2, 0x20
-                x_loop:
+                _main_x_loop:
                         bl set_pixel
                         add r0,  #2
                         subs r2, #1
-                        bne x_loop
+                        bne _main_x_loop
                 add r1, #1
                 subs r3, #1
-                bne y_loop
-
-        mov r2, 0
-        mov r0, 2
-        mov r1, 0
-        bl get_pixel
+                bne _main_y_loop
 
         wait:
                 b wait

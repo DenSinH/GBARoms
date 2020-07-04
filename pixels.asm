@@ -1,10 +1,6 @@
 include './lib/constants.inc'
 include './lib/macros.inc'
 
-; constants used to center the CHIP-8 screen
-SCREEN_OFFSET_H = 24
-SCREEN_OFFSET_V = 32
-
 coords_to_vram_coord:
         ; turn coord (r0, r1) into vram memory coordinate and store output in r0
         add r0, r0, lsl #1       ; r0 *= 3
@@ -14,8 +10,10 @@ coords_to_vram_coord:
         sub r1, r1, lsr #4       ; r1 *= 480
         add r0, r1
         add r0, MEM_VRAM         ; add VRAM start location to get start value of pixel
+
+        ; offset to center screen
         add r0, SCREEN_OFFSET_H * 2
-        add r0, SCREEN_OFFSET_V * 480   ; offset to center screen
+        add r0, SCREEN_OFFSET_V * VRAM_OFFSET_PER_SCANLINE
         bx lr
 
 set_pixel:
@@ -32,7 +30,7 @@ set_pixel:
                 strh r2, [r0]
                 add r0, #2
                 strh r2, [r0]
-                add r0, #480
+                add r0, #VRAM_OFFSET_PER_SCANLINE
                 sub r0, #4         ; add 480 (1 row horizontally), subtract 4 for proper x alignment
                 subs r3, 0x1
                 bne fill_sliver
