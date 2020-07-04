@@ -7,24 +7,24 @@ update_keypad:
         set_word r0, KEYINPUT
         ldrh r0, [r0]
 
-        mov r10, #0  ; key counter (result will be stored in here anyway)
+        mov r9, #0  ; key counter (result will be stored in here anyway)
         set_word r1, _key_mappings
         add r1, MEM_ROM
 
         _update_keypad_check_loop:
-                ldrh r2, [r1, r10]  ; load button halfword bitmask
+                ldrh r2, [r1, r9]  ; load button halfword bitmask
                 ; we use that KEYINPUT is inverted so that
                 ; KEYINPUT & BITMASK == 0 iff the buttons masked by BITMASK are pressed
                 tst r0, r2
-                addne r10, #4
+                addne r9, #4
                 beq _update_keypad_return
-                cmp r10, #0x40
+                cmp r9, #0x40
                 bne _update_keypad_check_loop
 
         _update_keypad_return:
                 ; we needed to increment r10 by 4 every time because the bitmasks
                 ; were 4 bytes long, so we divide by 4 to fix this again
-                mov r10, r10, lsr #2
+                mov r9, r9, lsr #2
 
                 ldmdb sp!, { r0, r1, r2 }
                 bx lr

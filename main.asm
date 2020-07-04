@@ -18,7 +18,9 @@ include './lib/macros.inc'
 ;       is not a "special" register
 ;    In the PC, we store the address relative to CHIP8_MEMORY, not the actual address
 ;    We store the Chip-8 SP in r11, the second highest GBA "non-special" register
-;    We store the Chip-8 keypad status in r10 (lowest 9 bits), 0x0010 if no key is pressed
+;       the stack we use will be an upwards building stack
+;    We store the Chip-8 I register in r10
+;    We store the Chip-8 keypad status in r9 (lowest 9 bits), 0x0010 if no key is pressed
 ;       otherwise, the number of the pressed key
 ;
 ;    For the keypad, we want to emulate 16 buttons with only the GBA buttons
@@ -36,29 +38,17 @@ header:
 
 main:
         include './init.asm'
-
-        mov r4, 0x20
+        set_word r11, CHIP8_STACK
+        set_word r0, CHIP8_ZERO
         mov r1, 0
-        mov r2, 0
-        _main_y_loop:
-                eor r2, 1
-                mov r0, 0
-                mov r3, 0x40
-                _main_x_loop:
-                        eor r2, 1
-                        bl set_pixel
-                        add r0,  #1
-                        subs r3, #1
-                        bne _main_x_loop
-                add r1, #1
-                subs r4, #1
-                bne _main_y_loop
+        str r1, [r0]
 
         bl load_rom
 
-        wait:
+        mainloop:
                 bl update_keypad
-                b wait
+                include './chip8/parse.asm'
+                b mainloop
 
 include './pixels.asm'
 include './chip8/update_keypad.asm'
