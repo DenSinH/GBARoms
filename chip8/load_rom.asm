@@ -1,4 +1,4 @@
-include '../../lib/constants.inc'
+include '../lib/constants.inc'
 
 load_rom:
         ; load rom (todo: rom selection)
@@ -6,7 +6,7 @@ load_rom:
         set_word r0, DMA3SAD
 
         ; load rom start addres in the GBA rom
-        set_word r1, pong
+        set_word r1, space_invaders
         add r1, MEM_ROM  ; account for ROM offset
         str r1, [r0]
 

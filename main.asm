@@ -3,14 +3,14 @@ format binary as 'gba'
 include './lib/constants.inc'
 include './lib/macros.inc'
 
-;           _____ ____          _____      _     _        ___
-;          / ____|  _ \   /\   / ____|    | |   (_)      / _ \
-;         | |  __| |_) | /  \ | |   ______| |__  _ _ __ | (_) |
-;         | | |_ |  _ < / /\ \| |  |______| '_ \| | '_ \ > _ <
-;         | |__| | |_) / ____ \ |____     | | | | | |_) | (_) |
-;          \_____|____/_/    \_\_____|    |_| |_|_| .__/ \___/
-;                                                 | |
-;                                                 |_|
+;           _____ ____          _____      _        ___
+;          / ____|  _ \   /\   / ____|    (_)      / _ \
+;         | |  __| |_) | /  \ | |   ________ _ __ | (_) |
+;         | | |_ |  _ < / /\ \| |  |______| | '_ \ > _ <
+;         | |__| | |_) / ____ \ |____     | | |_) | (_) |
+;          \_____|____/_/    \_\_____|    |_| .__/ \___/
+;                                           | |
+;                                           |_|
 ;
 ;    We store Chip-8 RAM in iWRAM, starting at CHIP8_MEMORY
 ;    We store the 16 general purpose registers in iWRAM, starting at CHIP8_REGISTERS
@@ -18,7 +18,18 @@ include './lib/macros.inc'
 ;       is not a "special" register
 ;    In the PC, we store the address relative to CHIP8_MEMORY, not the actual address
 ;    We store the Chip-8 SP in r11, the second highest GBA "non-special" register
-
+;    We store the Chip-8 keypad status in r10 (lowest 9 bits), 0x0010 if no key is pressed
+;       otherwise, the number of the pressed key
+;
+;    For the keypad, we want to emulate 16 buttons with only the GBA buttons
+;    We map them as follows:
+;            A     = 0           L + A     = 6
+;            B     = 1           L + B     = 7
+;            RIGHT = 2           L + RIGHT = 8         START      = c
+;            LEFT  = 3           L + LEFT  = 9         SELECT     = d
+;            UP    = 4           L + UP    = a         L + START  = e
+;            DOWN  = 5           L + DOWN  = b         L + SELECT = f
+;
 
 header:
         include './lib/header.inc'; I just borrowed this from JSMolka, thanks for that!
@@ -30,9 +41,11 @@ main:
         mov r1, 0
         mov r2, 0
         _main_y_loop:
+                eor r2, 1
                 mov r0, 0
                 mov r3, 0x40
                 _main_x_loop:
+                        eor r2, 1
                         bl set_pixel
                         add r0,  #1
                         subs r3, #1
@@ -44,10 +57,12 @@ main:
         bl load_rom
 
         wait:
+                bl update_keypad
                 b wait
 
 include './pixels.asm'
-include './chip8/roms/load_rom.asm'
+include './chip8/update_keypad.asm'
+include './chip8/load_rom.asm'
 
 digits:
         include './chip8/digits.asm'
