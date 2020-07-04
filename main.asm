@@ -26,25 +26,31 @@ header:
 main:
         include './init.asm'
 
-        mov r3, 0x20
-        mov r1, 0x0
+        mov r4, 0x20
+        mov r1, 0
+        mov r2, 0
         _main_y_loop:
-                and r0, r3, #1
-                mov r2, 0x20
+                mov r0, 0
+                mov r3, 0x40
                 _main_x_loop:
                         bl set_pixel
-                        add r0,  #2
-                        subs r2, #1
+                        add r0,  #1
+                        subs r3, #1
                         bne _main_x_loop
                 add r1, #1
-                subs r3, #1
+                subs r4, #1
                 bne _main_y_loop
+
+        bl load_rom
 
         wait:
                 b wait
 
-pixels:
-        include './pixels.asm'
+include './pixels.asm'
+include './chip8/roms/load_rom.asm'
+
+digits:
+        include './chip8/digits.asm'
 
 astro_dodge:
         include './chip8/roms/AstroDodge.ch8'

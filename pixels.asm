@@ -17,11 +17,13 @@ coords_to_vram_coord:
         bx lr
 
 set_pixel:
-        ; fill pixel at coord (r0, r1)
+        ; fill pixel at coord (r0, r1) to filled if r2 is set otherwise empty
         stmdb sp!, { r0, r1, r2, r3, lr }   ; save old values
         bl coords_to_vram_coord
 
-        set_half r2, FILL_COLOR  ; color to fill with
+        cmp r2, 0
+        movne r2, FILL_COLOR and 0xff
+        orrne r2, FILL_COLOR and 0xff00
         mov r3, 0x3              ; vertical counter
 
         fill_sliver:             ; fill sliver with pixel
