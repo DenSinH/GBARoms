@@ -38,21 +38,24 @@ header:
 
 main:
         include './init.asm'
+
+        bl load_rom
         set_word r11, CHIP8_STACK
+        mov r12, 0x200   ; initial value for CHIP-8 PC
         set_word r0, CHIP8_ZERO
         mov r1, 0
         str r1, [r0]
 
-        bl load_rom
 
         mainloop:
                 bl update_keypad
-                include './chip8/parse.asm'
+                bl parse_instr
                 b mainloop
 
 include './pixels.asm'
 include './chip8/update_keypad.asm'
 include './chip8/load_rom.asm'
+include './chip8/parse.asm'
 
 digits:
         include './chip8/digits.asm'

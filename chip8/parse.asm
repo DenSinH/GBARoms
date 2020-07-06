@@ -12,33 +12,36 @@ _instr_8_jump_table:
         dw 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
         dw 0xffffffff, 0xffffffff, _instr_8_E, 0xffffffff
 
-; using http://devernay.free.fr/hacks/chip8/C8TECH10.HTM, as I did with my python chip-8 interpreter
-set_word r3, CHIP8_MEMORY
-add r3, r12
-ldmia r3, { r3, r4 }
-add r12, #2
-add r3, r4, r3, lsl #8  ; Chip-8 ROMs are big-endian
-; r3 now contains the instruction
+parse_instr:
+        ; using http://devernay.free.fr/hacks/chip8/C8TECH10.HTM, as I did with my python chip-8 interpreter
+        set_word r4, CHIP8_MEMORY
+        add r4, r12
+        ldrb r3, [r4]
+        ldrb r4, [r4, #1]
+        add r12, #2
+        add r3, r4, r3, lsl #8  ; Chip-8 ROMs are big-endian
+        ; r3 now contains the instruction
 
-mov r4, 0x0f
-and r0, r4, r3, lsr #8  ; x
-and r1, r4, r3, lsr #4  ; y
+        mov r4, 0x0f
+        and r0, r4, r3, lsr #8  ; x
+        and r1, r4, r3, lsr #4  ; y
 
-set_word r5, CHIP8_REGISTERS
-; get register x value
-add r0, r5
-ldrb r4, [r4]
+        set_word r5, CHIP8_REGISTERS
+        ; get register x value
+        add r0, r5
+        ldrb r4, [r5, r0]
 
-; get register y value
-add r1, r5
-ldrb r5, [r1]
+        ; get register y value
+        add r1, r5
+        ldrb r5, [r5, r1]
 
-mov r6, r3, lsl #20     ; check top nibble
-set_word r7, _instr_jump_table
-add r7, MEM_ROM         ; account for ROM offset
-add r6, r7, r6, lsr #2  ; jump_table + 4 * instruction
-ldr r6, [r6]            ; load pointer
-bx r6                   ; jump to "switch case"
+        mov r6, r3, lsr #12     ; check top nibble
+        set_word r7, _instr_jump_table
+        add r7, MEM_ROM         ; account for ROM offset
+        add r6, r7, r6, lsl #2  ; jump_table + 4 * instruction
+        ldr r6, [r6]            ; load pointer
+        add r6, MEM_ROM         ; account for ROM offset again
+        bx r6                   ; jump to "switch case"
 
 ;       We now have:
 ;           r0: mem location of Vx
@@ -61,25 +64,25 @@ _instr_0:
         mov r1, MEM_VRAM
         set_word r2, 0x00118000
         swi 0xc00000
-        b _instr_return
+        bx lr
 
         _instr_0_ret:
                 ; RET, pop r12 off the Chip-8 stack
                 ldmdb r11!, { r12 }
-                b _instr_return
+                bx lr
 
 _instr_1:
         ; JP
         set_half r6, 0xfff
         and r12, r3, r6      ; jump address
-        b _instr_return
+        bx lr
 
 _instr_2:
         ; CALL
         set_half r6, 0xfff
         stmia r11!, { r12 }  ; push PC
         and r12, r3, r6      ; call address
-        b _instr_return
+        bx lr
 
 _instr_3:
         ; SE
@@ -87,7 +90,7 @@ _instr_3:
         and r6, r3, #0xff
         cmp r4, r6
         addeq r12, #2
-        b _instr_return
+        bx lr
 
 _instr_4:
         ; SNE
@@ -95,27 +98,27 @@ _instr_4:
         and r6, r3, #0xff
         cmp r4, r6
         addne r12, #2
-        b _instr_return
+        bx lr
 
 _instr_5:
         ; SE
         cmp r4, r5
         addeq r12, #2
-        b _instr_return
+        bx lr
 
 _instr_6:
         ; LD
         and r4, r3, #0xff
         strb r4, [r0]
 
-        b _instr_return
+        bx lr
 
 _instr_7:
         ; ADD
         add r4, r3  ; we will only store a byte anyway
         strb r4, [r0]
 
-        b _instr_return
+        bx lr
 
 _instr_8:
 
@@ -126,9 +129,10 @@ _instr_8:
         and r6, r3, #0xf
         set_word r7, _instr_8_jump_table
         add r7, MEM_ROM         ; account for ROM offset
-        add r6, r7, r6, lsr #2  ; set r6 to jump_table + 4 * r6
+        add r6, r7, r6, lsl #2  ; set r6 to jump_table + 4 * r6
 
         ldr r6, [r6]
+        add r6, MEM_ROM         ; account for ROM offset again
         bx r6
 
         _instr_8_0:
@@ -136,28 +140,28 @@ _instr_8:
 
                 strb r4, [r1]   ; store Vy in the memory location for Vx
 
-                b _instr_return
+                bx lr
 
         _instr_8_1:
                 ; OR
                 orr r4, r5
                 strb r4, [r0]
 
-                b _instr_return
+                bx lr
 
         _instr_8_2:
                 ; AND
                 and r4, r5
                 strb r4, [r0]
 
-                b _instr_return
+                bx lr
 
         _instr_8_3:
                 ; XOR
                 eor r4, r5
                 strb r4, [r0]
 
-                b _instr_return
+                bx lr
 
         _instr_8_4:
                 ; ADD
@@ -170,7 +174,7 @@ _instr_8:
                 movgt r4, #1
                 strb r4, [r8]
 
-                b _instr_return
+                bx lr
 
         _instr_8_5:
                 ; SUB
@@ -182,7 +186,7 @@ _instr_8:
                 movgt r4, #1
                 strb r4, [r8]
 
-                b _instr_return
+                bx lr
 
         _instr_8_6:
                 ; SHR
@@ -194,7 +198,7 @@ _instr_8:
                 movcs r4, #1
                 strb r4, [r8]
 
-                b _instr_return
+                bx lr
 
         _instr_8_7:
                 ; SUBN
@@ -206,32 +210,33 @@ _instr_8:
                 movgt r4, #1
                 strb r4, [r8]
 
-                b _instr_return
+                bx lr
 
         _instr_8_E:
                 ; SHL
-                movs r4, r4, lsl #1
+                mov r4, r4, lsl #1
                 strb r4, [r0]
 
                 ; VF = carry ? 1 : 0
+                cmp r4, 0xff     ; cs wont work because GBA registers are 32 bits
                 mov r4, #0
-                movcs r4, #1
+                movgt r4, #1
                 strb r4, [r8]
 
-                b _instr_return
+                bx lr
 
 _instr_9:
         ; SNE
         cmp r4, r5
         addne r12, #2
-        b _instr_return
+        bx lr
 
 _instr_A:
         ; LD I
         set_half r6, 0xfff
         and r10, r3, r6
 
-        b _instr_return
+        bx lr
 
 _instr_B:
         ; JP V0
@@ -242,7 +247,7 @@ _instr_B:
         and r12, r3, r6
         add r12, r8
 
-        b _instr_return
+        bx lr
 
 _instr_C:
         ; RND (todo)
@@ -251,16 +256,15 @@ _instr_C:
         and r4, r3
         strb r4, [r0]
 
-        b _instr_return
+        bx lr
 
 _instr_D:
         ; DRW (todo)
-        b _instr_return
+        bx lr
 
 _instr_E:
-        b _instr_return
+        bx lr
 
 _instr_F:
-        b _instr_return
+        bx lr
 
-_instr_return:
