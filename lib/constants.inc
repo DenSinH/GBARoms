@@ -48,9 +48,21 @@ REG_IME        = 0x04000208
 
 ; IO register settings
 DISPCNT_BGMODE3     = 0x0403
-DISPCNT_BGMODE4     = 0x0404
+DISPCNT_BGMODE0     = 0x0100
 BGCNT_BASE1         = 0x0004
 DMACNT_H_32BIT_IMM  = 0x8400
+
+; GBA buttons
+GBA_A      = 0x0001
+GBA_B      = 0x0002
+GBA_SELECT = 0x0004
+GBA_START  = 0x0008
+GBA_RIGHT  = 0x0010
+GBA_LEFT   = 0x0020
+GBA_UP     = 0x0040
+GBA_DOWN   = 0x0080
+GBA_R      = 0x0100
+GBA_L      = 0x0200
 
 ; Key mappings (bitmasks)
 BUTTON_0 = 0x0001

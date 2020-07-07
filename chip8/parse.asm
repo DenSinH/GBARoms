@@ -24,8 +24,7 @@ parse_instr:
         ldrb r5, [r1]
 
         mov r6, r3, lsr #12     ; check top nibble
-        set_word r7, _instr_jump_table
-        add r7, MEM_ROM         ; account for ROM offset
+        set_word r7, MEM_ROM + _instr_jump_table
         add r6, r7, r6, lsl #2  ; jump_table + 4 * instruction
         ldr r6, [r6]            ; load pointer
         add r6, MEM_ROM         ; account for ROM offset again
@@ -116,13 +115,11 @@ _instr_7:
 _instr_8:
 
         and r6, r3, #0xf
-        set_word r7, _instr_8_jump_table
-        add r7, MEM_ROM         ; account for ROM offset
+        set_word r7, MEM_ROM +_instr_8_jump_table
         add r6, r7, r6, lsl #2  ; set r6 to jump_table + 4 * r6
 
         ; set r7 to memory location of VF
-        set_word r7, CHIP8_REGISTERS
-        add r7, #0xf
+        set_word r7, CHIP8_REGISTERS + 0xf
 
         ldr r6, [r6]
         add r6, MEM_ROM         ; account for ROM offset again
@@ -314,8 +311,7 @@ _instr_D:
                 bne _instr_D_draw_byte_loop
 
         ; store colission
-        set_word r6, CHIP8_REGISTERS
-        add r6, #0xf
+        set_word r6, CHIP8_REGISTERS + 0xf
         strb r3, [r6]
 
         ldmia sp!, { r8, lr }
@@ -323,15 +319,16 @@ _instr_D:
 
 _instr_E:
 
-        mov r0, r4     ; set r0 = Vx
+        mov r0, r4              ; set r0 = Vx
         stmdb sp!, { lr }
-        bl keypad_is_pressed
+        bl keypad_is_pressed    ; poll if Vx is pressed
         ldmia sp!, { lr }
 
         and r7, r3, #0xff
         cmp r7, #0xa1
-        beq _instr_E_SKNP
+        beq _instr_E_SKNP       ; check if SKNP or SKP instruction
 
+        ; SKP
         cmp r2, #0
         addne r12, #2
         bx lr
@@ -399,7 +396,7 @@ _instr_F:
                 add r10, r10, lsl #2  ; I += 4 * I
                 bx lr
         _instr_F_33:
-                ; todo: BCD representations
+                ; BCD representations
                 mov r0, r4
                 mov r1, #10
                 swi 0x060000  ; divide r0 / r1

@@ -1,42 +1,29 @@
 include '../lib/constants.inc'
 include '../lib/macros.inc'
 
-init_menu:        \
+init_menu:
         stmdb sp!, { r0, r1, lr }
         ; clear VRAM
         mov r0, 0x08            ; VRAM bit
         swi 0x010000            ; RegisterRamReset
 
-        set_word r0, DMA3SAD
+        ; transfer the glyphs
+        do_dma MEM_ROM + glyphs, MEM_VRAM + 0x4000, 6 * 16 * 8
 
-        ; load glyphs start address in the GBA rom
-        set_word r1, glyphs
-        add r1, MEM_ROM  ; account for ROM offset
-        str r1, [r0]
-
-        add r0, #4  ; DMA3DAD
-        ; load charblock 1 address into r1
-        mov r1, MEM_VRAM
-        add r1, #0x4000
-        str r1, [r0]
-
-        add r0, #4  ; DMA3CNT_L
-        ; load glyphs memory length into DMA3CNT_L
-        mov r1, 24 * 8
+        ; enable BG0
+        set_word r0, BG0CNT
+        mov r1, #0x0004          ; CharBaseBlock 1
         strh r1, [r0]
 
-        add r0, #2  ; DMA3CNT_H
-        ; start the DMA transfer
-        set_word r1, DMACNT_H_32BIT_IMM
-        strh r1, [r0]
-
+        ; write fill color to palette
         set_half r1, FILL_COLOR
         mov r0, MEM_PALETTE
         add r0, #2
         strh r1, [r0]
 
+        ; set BG mode to 0
         mov r0, DISPCNT
-        set_half r1, DISPCNT_BGMODE4
+        set_half r1, DISPCNT_BGMODE0
         strh r1, [r0]
 
         ldmia sp!, { r0, r1, lr }
@@ -90,6 +77,13 @@ init_chip8:
                 sub r0, VRAM_OFFSET_PER_SCANLINE
                 subs r3, #1
                 bne _init_left_line
+
+        ; initialize register values
+        set_word r11, CHIP8_STACK
+        mov r12, 0x200   ; initial value for CHIP-8 PC
+        set_word r0, CHIP8_ZERO
+        mov r1, 0
+        str r1, [r0]
 
         bx lr
 

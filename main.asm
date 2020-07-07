@@ -38,19 +38,25 @@ header:
         include './lib/header.inc'; I just borrowed this from JSMolka, thanks for that!
 
 main:
+        ; disable interrupts
+        set_word r0, REG_IME
+        mov r1, #0
+        strh r1, [r0]
+
         bl init_menu
+        bl menu
 
-        menuloop:
-                b menuloop
+        ; r10 now holds the selected game (from menu::games)
+        ; we convert the game selected into an address
+        mov r10, r10, lsl #2           ; address length
+        set_word r9, MEM_ROM + games
+        ldr r10, [r9, r10]
+        add r10, MEM_ROM
 
-        bl init_chip8
         bl load_rom
-        set_word r11, CHIP8_STACK
-        mov r12, 0x200   ; initial value for CHIP-8 PC
-        set_word r0, CHIP8_ZERO
-        mov r1, 0
-        str r1, [r0]
+        bl init_chip8
 
+        ; initialize instruction counter
         mov r0, #10
         gameloop:
                 stmdb sp!, { r0 }
@@ -64,6 +70,13 @@ main:
                 cmp r9, #0
                 subsgt r9, #1
                 bl VBlankIntrWait
+
+                ; check if start + select pressed
+                set_word r1, KEYINPUT
+                ldrh r1, [r1]
+                tst r1, GBA_START or GBA_SELECT
+                beq main
+
                 b gameloop
 
 VBlankIntrWait:
@@ -80,6 +93,7 @@ VBlankIntrWait:
 
 
 include './chip8/init.asm'
+include './chip8/menu.asm'
 include './chip8/pixels.asm'
 include './chip8/update_keypad.asm'
 include './chip8/load_rom.asm'
