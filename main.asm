@@ -58,8 +58,23 @@ main:
                 ; subtract 1 from dt every 10 instructions
                 mov r0, #10
                 cmp r9, #0
-                subgt r9, #1
+                subsgt r9, #1
+                bl VBlankIntrWait
                 b mainloop
+
+VBlankIntrWait:
+        ; manually wait for VBlank by polling DISPSTAT
+        stmdb sp!, { r0, r1 }
+        set_word r1, DISPSTAT
+        _VBlankIntrWait_loop:
+                ldrh r0, [r1]
+                tst r0, #1  ; VBlank flag
+                beq _VBlankIntrWait_loop
+
+        ldmia sp!, { r0, r1 }
+        bx lr
+
+
 
 include './pixels.asm'
 include './chip8/update_keypad.asm'

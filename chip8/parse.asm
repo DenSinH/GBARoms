@@ -138,7 +138,7 @@ _instr_8:
         _instr_8_0:
                 ; LD
 
-                strb r4, [r1]   ; store Vy in the memory location for Vx
+                strb r5, [r0]   ; store Vy in the memory location for Vx
 
                 bx lr
 
@@ -267,12 +267,15 @@ _instr_D:
         ; If the sprite is positioned so part of it is outside the coordinates of the display,
         ;   it wraps around to the opposite side of the screen.
 
-        ;       r0: x coord           r3: instruction         r6: sprite address
+        ;       r0: x coord           r3: colission           r6: sprite address
         ;       r1: y coord           r4: bit counter         r7: byte counter
-        ;       r2: pixel on/off      r5: sprite byte         r8, r9, r10, r11, r12, sp, lr taken
+        ;       r2: pixel on/off      r5: sprite byte         r8: stored, then temp
+        ;                                                     r9, r10, r11, r12, sp, lr taken
         ands r7, r3, 0xf           ; number of bytes
         bxeq lr                    ; if we draw 0 bytes return immediately
-        stmdb sp!, { lr }
+        stmdb sp!, { r8, lr }
+
+        mov r3, #0
 
         set_word r6, CHIP8_MEMORY
         add r6, r10                ; load sprite left memory location
@@ -290,8 +293,13 @@ _instr_D:
                         mov r2, #0
                         movne r2, #1       ; set r2 to 0 if empty else 1
 
-                        eor r2, r5, lsr r4 ; r2 ^= r5 >> r4 (bitcount)
-                        mov r2, r2, lsl #31
+                        mov r8, r5, lsr r4
+                        and r8, #1         ; get bit we are checking in r8
+                        add r2, r8
+                        cmp r2, #2         ; check if there is colission
+                        orreq r3, #1
+                        and r2, #1         ; finish the XOR operation
+
                         bl set_pixel       ; set pixel at (r0, r1) to off if r2 == 0 else on
                         add r0, #1
                         and r0, #63        ; x = (x + 1) % 64
@@ -305,13 +313,20 @@ _instr_D:
                 and r0, #63
                 bne _instr_D_draw_byte_loop
 
-        ldmia sp!, { lr }
+        ; store colission
+        set_word r6, CHIP8_REGISTERS
+        add r6, #0xf
+        strb r3, [r6]
+
+        ldmia sp!, { r8, lr }
         bx lr
 
 _instr_E:
 
         mov r0, r4     ; set r0 = Vx
+        stmdb sp!, { lr }
         bl keypad_is_pressed
+        ldmia sp!, { lr }
 
         and r7, r3, #0xff
         cmp r7, #0xa1
@@ -385,6 +400,24 @@ _instr_F:
                 bx lr
         _instr_F_33:
                 ; todo: BCD representations
+                mov r0, r4
+                mov r1, #10
+                swi 0x060000  ; divide r0 / r1
+                mov r7, r1    ; r7 = Vx % 10
+                mov r1, #10
+                swi 0x060000  ; divide r0 / r1 / r1
+                mov r6, r1    ; r6 = Vx tens
+                mov r5, r0    ; r7 = Vx hundreds
+                set_word r0, CHIP8_MEMORY
+                add r0, r10   ; start address for storing
+
+                ; store decimal
+                strb r5, [r0]
+                add r0, #1
+                strb r6, [r0]
+                add r0, #1
+                strb r7, [r0]
+
                 bx lr
         _instr_F_55:
                 set_word r7, CHIP8_REGISTERS

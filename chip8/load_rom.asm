@@ -27,7 +27,7 @@ load_rom:
         strh r1, [r0]
 
         sub r0, #10 ; return to DMA3SAD
-        set_word r1, test
+        set_word r1, tetris
         add r1, MEM_ROM  ; account for ROM offset
         str r1, [r0]
 
