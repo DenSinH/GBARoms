@@ -1,5 +1,5 @@
-include './lib/constants.inc'
-include './lib/macros.inc'
+include '../lib/constants.inc'
+include '../lib/macros.inc'
 
 init_menu:        \
         stmdb sp!, { r0, r1, lr }
@@ -30,10 +30,13 @@ init_menu:        \
         set_word r1, DMACNT_H_32BIT_IMM
         strh r1, [r0]
 
-        set_word r1, FILL_COLOR
+        set_half r1, FILL_COLOR
         mov r0, MEM_PALETTE
-
         add r0, #2
+        strh r1, [r0]
+
+        mov r0, DISPCNT
+        set_half r1, DISPCNT_BGMODE4
         strh r1, [r0]
 
         ldmia sp!, { r0, r1, lr }
@@ -90,4 +93,4 @@ init_chip8:
 
         bx lr
 
-include '../../lib/glyphs.inc'
+include '../lib/glyphs.inc'

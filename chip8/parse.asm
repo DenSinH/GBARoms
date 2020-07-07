@@ -51,12 +51,12 @@ _instr_0:
         cmp r3, #0x00e0
         bne _instr_0_ret
 
-        ; CLS, we do this using a CpuSet SWI
-        ; We don't need the register values here either way
-        set_word r0, CHIP8_ZERO
-        mov r1, MEM_VRAM
-        set_word r2, 0x00118000
-        swi 0xc00000
+        ; CLS
+        stmdb sp!, { lr }
+
+        bl init_chip8
+
+        ldmia sp!, { lr }
         bx lr
 
         _instr_0_ret:
@@ -308,9 +308,9 @@ _instr_D:
 
                 subs r7, #1
                 add r1, #1
-                and r1, #63
+                and r1, #0x1f
                 sub r0, #8
-                and r0, #63
+                and r0, #0x3f
                 bne _instr_D_draw_byte_loop
 
         ; store colission

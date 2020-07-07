@@ -48,6 +48,8 @@ REG_IME        = 0x04000208
 
 ; IO register settings
 DISPCNT_BGMODE3     = 0x0403
+DISPCNT_BGMODE4     = 0x0404
+BGCNT_BASE1         = 0x0004
 DMACNT_H_32BIT_IMM  = 0x8400
 
 ; Key mappings (bitmasks)

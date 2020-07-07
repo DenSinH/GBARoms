@@ -27,7 +27,7 @@ get_key:
                 movs r2, r2, asr #2
                 movlt r2, 0x10
 
-                ldmia sp!, { r0, r1 }
+                ldmia sp!, { r0, r1, r3 }
                 bx lr
 
 keypad_is_pressed:

@@ -38,8 +38,12 @@ header:
         include './lib/header.inc'; I just borrowed this from JSMolka, thanks for that!
 
 main:
-        include './init.asm'
+        bl init_menu
 
+        menuloop:
+                b menuloop
+
+        bl init_chip8
         bl load_rom
         set_word r11, CHIP8_STACK
         mov r12, 0x200   ; initial value for CHIP-8 PC
@@ -48,19 +52,19 @@ main:
         str r1, [r0]
 
         mov r0, #10
-        mainloop:
+        gameloop:
                 stmdb sp!, { r0 }
                 bl parse_instr
                 ldmia sp!, { r0 }
                 subs r0, #1
-                bgt mainloop
+                bgt gameloop
 
                 ; subtract 1 from dt every 10 instructions
                 mov r0, #10
                 cmp r9, #0
                 subsgt r9, #1
                 bl VBlankIntrWait
-                b mainloop
+                b gameloop
 
 VBlankIntrWait:
         ; manually wait for VBlank by polling DISPSTAT
@@ -75,8 +79,8 @@ VBlankIntrWait:
         bx lr
 
 
-
-include './pixels.asm'
+include './chip8/init.asm'
+include './chip8/pixels.asm'
 include './chip8/update_keypad.asm'
 include './chip8/load_rom.asm'
 include './chip8/parse.asm'

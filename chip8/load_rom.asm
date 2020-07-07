@@ -2,10 +2,10 @@ include '../lib/constants.inc'
 
 load_rom:
         ; load rom (todo: rom selection)
-        stmia sp, { r0, r1 }
+        stmdb sp!, { r0, r1 }
         set_word r0, DMA3SAD
 
-        ; load rom start addres in the GBA rom
+        ; load digits start address in the GBA rom
         set_word r1, digits
         add r1, MEM_ROM  ; account for ROM offset
         str r1, [r0]
@@ -27,7 +27,7 @@ load_rom:
         strh r1, [r0]
 
         sub r0, #10 ; return to DMA3SAD
-        set_word r1, tetris
+        set_word r1, pong
         add r1, MEM_ROM  ; account for ROM offset
         str r1, [r0]
 
@@ -46,7 +46,7 @@ load_rom:
         strh r1, [r0]
 
         ; return
-        ldmdb sp, { r0, r1 }
+        ldmia sp!, { r0, r1 }
         bx lr
 
 
