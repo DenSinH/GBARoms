@@ -1,17 +1,5 @@
 include '../lib/constants.inc'
 
-_instr_jump_table:
-        dw _instr_0, _instr_1, _instr_2, _instr_3
-        dw _instr_4, _instr_5, _instr_6, _instr_7
-        dw _instr_8, _instr_9, _instr_A, _instr_B
-        dw _instr_C, _instr_D, _instr_E, _instr_F
-
-_instr_8_jump_table:
-        dw _instr_8_0, _instr_8_1, _instr_8_2, _instr_8_3
-        dw _instr_8_4, _instr_8_5, _instr_8_6, _instr_8_7
-        dw 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
-        dw 0xffffffff, 0xffffffff, _instr_8_E, 0xffffffff
-
 parse_instr:
         ; using http://devernay.free.fr/hacks/chip8/C8TECH10.HTM, as I did with my python chip-8 interpreter
         set_word r4, CHIP8_MEMORY
@@ -29,11 +17,11 @@ parse_instr:
         set_word r5, CHIP8_REGISTERS
         ; get register x value
         add r0, r5
-        ldrb r4, [r5, r0]
+        ldrb r4, [r0]
 
         ; get register y value
         add r1, r5
-        ldrb r5, [r5, r1]
+        ldrb r5, [r1]
 
         mov r6, r3, lsr #12     ; check top nibble
         set_word r7, _instr_jump_table
@@ -42,6 +30,12 @@ parse_instr:
         ldr r6, [r6]            ; load pointer
         add r6, MEM_ROM         ; account for ROM offset again
         bx r6                   ; jump to "switch case"
+
+_instr_jump_table:
+        dw _instr_0, _instr_1, _instr_2, _instr_3
+        dw _instr_4, _instr_5, _instr_6, _instr_7
+        dw _instr_8, _instr_9, _instr_A, _instr_B
+        dw _instr_C, _instr_D, _instr_E, _instr_F
 
 ;       We now have:
 ;           r0: mem location of Vx
@@ -52,7 +46,6 @@ parse_instr:
 ;           r5: value of Vy
 ;           r6: ???
 ;           r7: ???
-;           r8: ???
 
 _instr_0:
         cmp r3, #0x00e0
@@ -122,18 +115,25 @@ _instr_7:
 
 _instr_8:
 
-        ; set r8 to memory location of VF
-        set_word r8, CHIP8_REGISTERS
-        add r8, #0xf
-
         and r6, r3, #0xf
         set_word r7, _instr_8_jump_table
         add r7, MEM_ROM         ; account for ROM offset
         add r6, r7, r6, lsl #2  ; set r6 to jump_table + 4 * r6
 
+        ; set r7 to memory location of VF
+        set_word r7, CHIP8_REGISTERS
+        add r7, #0xf
+
         ldr r6, [r6]
         add r6, MEM_ROM         ; account for ROM offset again
         bx r6
+
+
+        _instr_8_jump_table:
+                dw _instr_8_0, _instr_8_1, _instr_8_2, _instr_8_3
+                dw _instr_8_4, _instr_8_5, _instr_8_6, _instr_8_7
+                dw 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
+                dw 0xffffffff, 0xffffffff, _instr_8_E, 0xffffffff
 
         _instr_8_0:
                 ; LD
@@ -172,7 +172,7 @@ _instr_8:
                 cmp r4, #0xff
                 mov r4, #0
                 movgt r4, #1
-                strb r4, [r8]
+                strb r4, [r7]
 
                 bx lr
 
@@ -184,7 +184,7 @@ _instr_8:
                 ; VF = (Vx > Vy) ? 1 : 0  (NOT borrow)
                 mov r4, #0
                 movgt r4, #1
-                strb r4, [r8]
+                strb r4, [r7]
 
                 bx lr
 
@@ -196,7 +196,7 @@ _instr_8:
                 ; VF = carry ? 1 : 0
                 mov r4, #0
                 movcs r4, #1
-                strb r4, [r8]
+                strb r4, [r7]
 
                 bx lr
 
@@ -208,7 +208,7 @@ _instr_8:
                 ; VF = (Vy > Vx) ? 1 : 0  (NOT borrow)
                 mov r4, #0
                 movgt r4, #1
-                strb r4, [r8]
+                strb r4, [r7]
 
                 bx lr
 
@@ -221,7 +221,7 @@ _instr_8:
                 cmp r4, 0xff     ; cs wont work because GBA registers are 32 bits
                 mov r4, #0
                 movgt r4, #1
-                strb r4, [r8]
+                strb r4, [r7]
 
                 bx lr
 
@@ -240,12 +240,12 @@ _instr_A:
 
 _instr_B:
         ; JP V0
-        set_word r8, CHIP8_REGISTERS
-        ldrb r8, [r8]
+        set_word r7, CHIP8_REGISTERS
+        ldrb r7, [r7]
         set_half r6, 0xfff
 
         and r12, r3, r6
-        add r12, r8
+        add r12, r7
 
         bx lr
 
@@ -260,11 +260,160 @@ _instr_C:
 
 _instr_D:
         ; DRW (todo)
+        ; The interpreter reads n bytes from memory, starting at the address stored in I.
+        ; These bytes are then displayed as sprites on screen at coordinates (Vx, Vy).
+        ; Sprites are XORed onto the existing screen. If this causes any pixels to be erased,
+        ;   VF is set to 1, otherwise it is set to 0.
+        ; If the sprite is positioned so part of it is outside the coordinates of the display,
+        ;   it wraps around to the opposite side of the screen.
+
+        ;       r0: x coord           r3: instruction         r6: sprite address
+        ;       r1: y coord           r4: bit counter         r7: byte counter
+        ;       r2: pixel on/off      r5: sprite byte         r8, r9, r10, r11, r12, sp, lr taken
+        ands r7, r3, 0xf           ; number of bytes
+        bxeq lr                    ; if we draw 0 bytes return immediately
+        stmdb sp!, { lr }
+
+        set_word r6, CHIP8_MEMORY
+        add r6, r10                ; load sprite left memory location
+        mov r0, r4                 ; set r0 = Vx
+        mov r1, r5                 ; set r1 = Vy
+
+        _instr_D_draw_byte_loop:
+                mov r4, #7         ; bit counter
+                ldrb r5, [r6]      ; read byte to be drawn
+                add r6, #1         ; increment sprite address
+
+                _instr_D_draw_bit_loop:
+                        bl get_pixel       ; get pixel value
+                        cmp r2, #0
+                        mov r2, #0
+                        movne r2, #1       ; set r2 to 0 if empty else 1
+
+                        eor r2, r5, lsr r4 ; r2 ^= r5 >> r4 (bitcount)
+                        mov r2, r2, lsl #31
+                        bl set_pixel       ; set pixel at (r0, r1) to off if r2 == 0 else on
+                        add r0, #1
+                        and r0, #63        ; x = (x + 1) % 64
+                        subs r4, #1
+                        bge _instr_D_draw_bit_loop
+
+                subs r7, #1
+                add r1, #1
+                and r1, #63
+                sub r0, #8
+                and r0, #63
+                bne _instr_D_draw_byte_loop
+
+        ldmia sp!, { lr }
         bx lr
 
 _instr_E:
+
+        mov r0, r4     ; set r0 = Vx
+        bl keypad_is_pressed
+
+        and r7, r3, #0xff
+        cmp r7, #0xa1
+        beq _instr_E_SKNP
+
+        cmp r2, #0
+        addne r12, #2
         bx lr
 
+        _instr_E_SKNP:
+                ; SKNP
+                cmp r2, #0
+                addeq r12, #2  ; skip if not pressed
+                bx lr
+
 _instr_F:
-        bx lr
+        and r7, r3, 0xff   ; lower byte
+        cmp r7, #0x65
+        beq _instr_F_65
+        cmp r7, #0x55
+        beq _instr_F_55
+        cmp r7, #0x33
+        beq _instr_F_33
+        cmp r7, #0x29
+        beq _instr_F_29
+        cmp r7, #0x1e
+        beq _instr_F_1E
+        cmp r7, #0x18
+        beq _instr_F_18
+        cmp r7, #0x15
+        beq _instr_F_15
+        cmp r7, #0x0a
+        beq _instr_F_0A
+
+        _instr_F_07:
+                ; Vx = dt
+                mov r4, r9
+                strb r4, [r0]
+
+                bx lr
+        _instr_F_0A:
+                ; wait for keypress and store it in Vx
+                stmdb sp!, { lr }
+                _instr_F_0A_get_key_loop:
+                        bl get_key
+                        cmp r2, #0x10
+                        beq _instr_F_0A_get_key_loop
+
+                strb r2, [r0]
+
+                ldmia sp!, { lr }
+                bx lr
+        _instr_F_15:
+                ; set dt = Vx
+                mov r9, r4
+                bx lr
+        _instr_F_18:
+                ; set st = Vx
+                mov r8, r4
+                bx lr
+        _instr_F_1E:
+                ; I += Vx
+                add r10, r4
+
+                bx lr
+        _instr_F_29:
+                ; set I = location of sprite Vx
+                mov r10, r4
+                ; sprites are 4 bytes long
+                add r10, r10, lsl #2  ; I += 4 * I
+                bx lr
+        _instr_F_33:
+                ; todo: BCD representations
+                bx lr
+        _instr_F_55:
+                set_word r7, CHIP8_REGISTERS
+                mov r3, #0   ; register counter
+                sub r0, r7   ; revert back to register number instread of memory location
+                set_word r6, CHIP8_MEMORY
+                add r6, r10  ; location to store the registers
+
+                _instr_F_55_loop:
+                        ldrb r4, [r7, r3]  ; load register Vr3
+                        strb r4, [r6, r3]  ; store at I + r3
+                        add r3, #1
+                        cmp r3, r0
+                        ble _instr_F_55_loop
+
+                bx lr
+        _instr_F_65:
+                set_word r7, CHIP8_REGISTERS
+                mov r3, #0   ; register counter
+                sub r0, r7   ; revert back to register number instread of memory location
+                set_word r6, CHIP8_MEMORY
+                add r6, r10  ; location to store the registers
+
+                _instr_F_65_loop:
+                        ldrb r4, [r6, r3]  ; load register I + r3
+                        strb r4, [r7, r3]  ; store at Vr3
+                        add r3, #1
+                        cmp r3, r0
+                        ble _instr_F_65_loop
+
+                bx lr
 

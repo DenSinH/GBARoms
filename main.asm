@@ -20,8 +20,9 @@ include './lib/macros.inc'
 ;    We store the Chip-8 SP in r11, the second highest GBA "non-special" register
 ;       the stack we use will be an upwards building stack
 ;    We store the Chip-8 I register in r10
-;    We store the Chip-8 keypad status in r9 (lowest 9 bits), 0x0010 if no key is pressed
-;       otherwise, the number of the pressed key
+;    We store the Chip-8 dt register in r9
+;    We store the Chip-8 st register in r8
+;
 ;
 ;    For the keypad, we want to emulate 16 buttons with only the GBA buttons
 ;    We map them as follows:
@@ -46,10 +47,18 @@ main:
         mov r1, 0
         str r1, [r0]
 
-
+        mov r0, #10
         mainloop:
-                bl update_keypad
+                stmdb sp!, { r0 }
                 bl parse_instr
+                ldmia sp!, { r0 }
+                subs r0, #1
+                bgt mainloop
+
+                ; subtract 1 from dt every 10 instructions
+                mov r0, #10
+                cmp r9, #0
+                subgt r9, #1
                 b mainloop
 
 include './pixels.asm'
@@ -80,4 +89,7 @@ tetris:
 
 tic_tac_toe:
         include './chip8/roms/TicTacToe.ch8'
+
+test:
+        include './chip8/roms/test_opcode.ch8'
 
