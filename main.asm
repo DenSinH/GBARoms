@@ -1,8 +1,12 @@
 format binary as 'gba'
 
 include './lib/constants.inc'
-include './lib/macros.inc'
-
+macro set_word reg, value {
+        mov reg, (value) and 0xff
+        orr reg, (value) and 0xff00
+        orr reg, (value) and 0xff0000
+        orr reg, (value) and 0xff000000
+}
 
 header:
         include './lib/header.inc'; I just borrowed this from JSMolka, thanks for that!

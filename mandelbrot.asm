@@ -1,5 +1,4 @@
 include './lib/constants.inc'
-include './lib/macros.inc'
 
 ;       The interesting range for the mandelbrot set is [-2, 1] x [-1, 1] apparently
 ;       conveniently, the screen ratio for the GBA is 3 x 2
@@ -32,6 +31,7 @@ include './lib/macros.inc'
 
 code16
 mandelbrot:
+        push { lr }
 
         ; load VRAM start
         mov r7, #6
@@ -72,7 +72,7 @@ mandelbrot:
 
                         _mandelbrot_loop:
                                 add r7, #1      ; increment loop counter
-                                cmp r7, #0xff   ; check for divergence
+                                cmp r7, #25     ; check for divergence
                                 bgt _mandelbrot_draw
 
                                 mov r6, #13
@@ -80,12 +80,10 @@ mandelbrot:
                                 mul r4, r2
                                 asr r4, r6      ; x**2
 
-                                mov r5, #0
-                                mov r6, r2
-                                mul r6, r3      ; xy << 13
-                                sub r5, r6      ; -xy << 13
+                                mov r5, r2
+                                mul r5, r3      ; xy << 13
                                 mov r6, #12     ; NOT 13 because we need to multiply by 2
-                                asr r5, r6      ; -2xy
+                                asr r5, r6      ; 2xy
 
                                 mov r6, r3
                                 mul r6, r3
@@ -120,18 +118,21 @@ mandelbrot:
                                 add r8, r5      ; increment draw address
 
                                 add r9, r5      ; add to pixel counter
-                                add r0, #0x67   ; add dx
+                                add r0, #0x66   ; add dx
 
                                 mov r4, r9
                                 mov r5, #0xff
                                 and r4, r5
                                 cmp r4, #240    ; check if we have reached the end of a scanline
-
                                 beq _mandelbrot_next_y
+
+                                and r4, #0x3
+                                add r0, #1      ; add 1 if x == 0 (mod 4) to account for finite precision
                                 b _mandelbrot_loop_x
 
                         _mandelbrot_next_y:
                                 mov r5, #8
+                                mov r4, r9
                                 lsr r4, r5
                                 add r4, #1
                                 cmp r4, #160     ; check if we have reached the end of the screen
@@ -140,11 +141,16 @@ mandelbrot:
                                 ; if we have not, set r9 to [y + 1] [ 0 ]
                                 lsl r4, r5
                                 mov r9, r4
-                                sub r1, #0x67
+                                sub r1, #0x66
+
+                                lsr r4, r5
+                                and r4, #3
+                                bne _mandelbrot_loop_y
+                                add r1, #1  ; add 1 if y == 0 (mod 4) to account for finite precision
                                 b _mandelbrot_loop_y
 
                         _mandelbrot_return:
-                                bx lr
+                                pop { pc }
 
 
 
