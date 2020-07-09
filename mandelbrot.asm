@@ -157,6 +157,8 @@ mandelbrot:
                         _mandelbrot_return:
                                 pop { r0 }
                                 bx r0
+end_mandelbrot:
+        dw ':-) '
 
 
 
