@@ -127,6 +127,8 @@ mandelbrot:
                                 beq _mandelbrot_next_y
 
                                 and r4, #0x3
+                                bne _mandelbrot_loop_x
+
                                 add r0, #1      ; add 1 if x == 0 (mod 4) to account for finite precision
                                 b _mandelbrot_loop_x
 
@@ -146,6 +148,7 @@ mandelbrot:
                                 lsr r4, r5
                                 and r4, #3
                                 bne _mandelbrot_loop_y
+
                                 add r1, #1  ; add 1 if y == 0 (mod 4) to account for finite precision
                                 b _mandelbrot_loop_y
 
