@@ -67,6 +67,49 @@ mandelbrot:
                         ; initial value for c = x + iy = (r2 + r3 i)
                         mov r2, r0
                         mov r3, r1
+
+                        ; check for main/secondary bulb
+                        ; from https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#
+                        ; we reset r7 after this, so we can use it as an extra aritmetic register!
+                        ; since we only multiply once, we do not always have to account for
+                        ; finite precision by shifting back
+                        ; secondary bulb:
+                        mov r6, #0x20
+                        mov r7, #8
+                        lsl r6, r7     ; r6 == 1
+
+                        mov r4, r2
+                        add r4, r6
+                        mul r4, r4     ; (x + 1)^2  << 13
+
+                        mov r5, r3
+                        mul r5, r3     ; y^2 << 13
+                        add r4, r5     ; (x + 1)^2 + y^2 << 13
+                        mov r7, #9
+                        lsl r6, r7     ; 1 / 16 << 13
+                        cmp r4, r6     ; (x + 1)^2 + y^2 <= 1 / 16
+                        ble _mandelbrot_fast_converge
+
+                        ; main lobe
+                        mov r4, r2
+                        mov r7, #11
+                        lsr r6, r7      ; 1 / 4
+                        sub r4, r6
+                        mov r7, r4      ; store (x - 1/4) for later
+                        mul r4, r4      ; (x - 1 /4)^2 << 13
+
+                        ; q = (x - 1 /4)^2 + y^2 ( r5 still contained y^2 << 13)
+                        add r4, r5      ; q << 13
+                        mov r6, #13
+                        lsr r4, r6
+                        add r7, r4      ; q + (x - 1 / 4)
+
+                        mul r7, r4      ; q(q + (x - 1 / 4)) << 13
+                        mov r6, #2
+                        lsr r5, r6      ; y^2 / 4  << 13
+                        cmp r7, r5
+                        ble _mandelbrot_fast_converge
+
                         mov r7, #0
                         sub r7, #1  ; reset counter
 
@@ -110,6 +153,9 @@ mandelbrot:
 
                                 bge _mandelbrot_draw
                                 b _mandelbrot_loop
+
+                        _mandelbrot_fast_converge:
+                                mov r7, #25
 
                         _mandelbrot_draw:
                                 mov r4, r8      ; load VRAM drawing address
