@@ -150,7 +150,8 @@ mandelbrot:
                                 b _mandelbrot_loop_y
 
                         _mandelbrot_return:
-                                pop { pc }
+                                pop { r0 }
+                                bx r0
 
 
 
