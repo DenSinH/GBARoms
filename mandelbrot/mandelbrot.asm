@@ -73,45 +73,96 @@ mandelbrot:
                         ; we reset r7 after this, so we can use it as an extra aritmetic register!
                         ; since we only multiply once, we do not always have to account for
                         ; finite precision by shifting back
-                        ; secondary bulb:
+
+                        ; bounding boxes (rectangles):
+                        ;     smaller bulb: [-1 1/4, -3/4] x [-1/4, 1/4]
+                        ;
+                        ;     bigger bulb: [-3/4,  3/8] x [-3sqrt(3) / 8, 3sqrt(3) / 8]
+                        ;                                  -0x14C9        0x14C9
                         mov r6, #0x20
                         mov r7, #8
                         lsl r6, r7     ; r6 == 1
+                        ; we want to keep r6 == 1 throughout the bounding box checkign
+                        ; for the bulb checking
 
-                        mov r4, r2
-                        add r4, r6
-                        mul r4, r4     ; (x + 1)^2  << 13
+                        mov r5, r6
+                        mov r7, #2
+                        lsr r5, r7     ; r5 = 1 / 4
 
-                        mov r5, r3
-                        mul r5, r3     ; y^2 << 13
-                        add r4, r5     ; (x + 1)^2 + y^2 << 13
-                        mov r7, #9
-                        lsl r6, r7     ; 1 / 16 << 13
-                        cmp r4, r6     ; (x + 1)^2 + y^2 <= 1 / 16
+                        mov r4, r6
+                        add r4, r5     ; 1 1/4
+                        cmn r0, r4     ; x < -1 1/4
+                        blt _mandelbrot_loop_init
+
+                        sub r4, r5
+                        sub r4, r5
+                        cmn r0, r4     ; x > -3/4
+                        bge _big_bulb_bounding_box
+
+                        cmp r1, r5     ; y > 1/4
+                        bge _mandelbrot_loop_init
+
+                        cmn r1, r5     ; y > - 1/4
+                        bgt _bulb_checking
+                        b _mandelbrot_loop_init
+
+                        _big_bulb_bounding_box:
+                                mov r4, r5
+                                mov r7, #1
+                                lsr r5, r7      ; r4 = 1/4, r5 = 1/8
+                                add r4, r5
+                                cmp r0, r4      ; x > 3/8
+                                bgt _mandelbrot_loop_init
+
+                                mov r7, #8
+                                mov r4, #0x14
+                                lsl r4, r7
+                                add r4, #0xc9   ; r4 = 0x14c9 ~3sqrt(3) / 8
+
+                                cmp r1, r4      ; y > 3sqrt(3) / 8
+                                bgt _mandelbrot_loop_init
+
+                                cmn r1, r4      ; y < 3sqrt(3) / 8
+                                blt _mandelbrot_loop_init
+
+                        _bulb_checking:
+                                ; r6 is still 1
+                                ; secondary bulb:
+                                mov r4, r2
+                                add r4, r6
+                                mul r4, r4     ; (x + 1)^2  << 13
+
+                                mov r5, r3
+                                mul r5, r3     ; y^2 << 13
+                                add r4, r5     ; (x + 1)^2 + y^2 << 13
+                                mov r7, #9
+                                lsl r6, r7     ; 1 / 16 << 13
+                                cmp r4, r6     ; (x + 1)^2 + y^2 <= 1 / 16
+                                ble _mandelbrot_fast_converge
+
+                                ; main lobe
+                                mov r4, r2
+                                mov r7, #11
+                                lsr r6, r7      ; 1 / 4
+                                sub r4, r6
+                                mov r7, r4      ; store (x - 1/4) for later
+                                mul r4, r4      ; (x - 1 /4)^2 << 13
+
+                                ; q = (x - 1 /4)^2 + y^2 ( r5 still contained y^2 << 13)
+                                add r4, r5      ; q << 13
+                                mov r6, #13
+                                lsr r4, r6
+                                add r7, r4      ; q + (x - 1 / 4)
+
+                                mul r7, r4      ; q(q + (x - 1 / 4)) << 13
+                                mov r6, #2
+                                lsr r5, r6      ; y^2 / 4  << 13
+                                cmp r7, r5
                         ble _mandelbrot_fast_converge
 
-                        ; main lobe
-                        mov r4, r2
-                        mov r7, #11
-                        lsr r6, r7      ; 1 / 4
-                        sub r4, r6
-                        mov r7, r4      ; store (x - 1/4) for later
-                        mul r4, r4      ; (x - 1 /4)^2 << 13
-
-                        ; q = (x - 1 /4)^2 + y^2 ( r5 still contained y^2 << 13)
-                        add r4, r5      ; q << 13
-                        mov r6, #13
-                        lsr r4, r6
-                        add r7, r4      ; q + (x - 1 / 4)
-
-                        mul r7, r4      ; q(q + (x - 1 / 4)) << 13
-                        mov r6, #2
-                        lsr r5, r6      ; y^2 / 4  << 13
-                        cmp r7, r5
-                        ble _mandelbrot_fast_converge
-
-                        mov r7, #0
-                        sub r7, #1  ; reset counter
+                        _mandelbrot_loop_init:
+                                mov r7, #0
+                                sub r7, #1  ; reset counter
 
                         _mandelbrot_loop:
                                 add r7, #1      ; increment loop counter
