@@ -5,6 +5,10 @@ PALETTE_LENGTH = 26
 code16
 align 2
 init:
+        ; clear VRAM
+        mov r0, #0x08            ; VRAM bit
+        swi 0x01                 ; RegisterRamReset
+
         ; set palette
         ; load SAD
         mov r7, #24
