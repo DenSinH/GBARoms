@@ -92,7 +92,7 @@ mandelbrot:
 
                                 mov r2, r4
                                 sub r2, r6      ; x**2 - y**2
-                                mov r3, r5      ; -2xy
+                                mov r3, r5      ; 2xy
                                 add r2, r0      ; Re(z_n^2 + c)
                                 add r3, r1      ; Im(z_n^2 + c)
 
@@ -129,7 +129,8 @@ mandelbrot:
                                 and r4, #0x3
                                 bne _mandelbrot_loop_x
 
-                                add r0, #1      ; add 1 if x == 0 (mod 4) to account for finite precision
+                                ; add 1 if x == 0 (mod 4) to account for finite precision
+                                add r0, #1
                                 b _mandelbrot_loop_x
 
                         _mandelbrot_next_y:
@@ -149,7 +150,8 @@ mandelbrot:
                                 and r4, #3
                                 bne _mandelbrot_loop_y
 
-                                add r1, #1  ; add 1 if y == 0 (mod 4) to account for finite precision
+                                ; move down 1 if more y == 0 (mod 4) to account for finite precision
+                                sub r1, #1
                                 b _mandelbrot_loop_y
 
                         _mandelbrot_return:
