@@ -107,7 +107,12 @@ test_3:
         send_command #0xA0    ; prepare write
         strb r3, [r6]         ; store ID + 1 back to flash at start of flash
 
-        ; (ID can be read immediately)
+        ; wait a bit before reading
+        mov r5, #0x80000
+        _test_3_wait:
+                subs r5, #1
+                bne _test_3_wait
+
         ldrb r2, [r6]         ; read back value from flash start (still in ID mode)
                               ; -> r2 = read back value
 
@@ -119,12 +124,6 @@ test_4:
         mov r12, #4
 
         send_command #0xF0    ; exit ID mode
-
-        ; wait a bit before reading
-        mov r5, #0x10000
-        _test_4_wait:
-                subs r5, #1
-                bne _test_4_wait
 
         ldrb r2, [r6]         ; load value
         cmp r2, r3            ; compare to initial written value
