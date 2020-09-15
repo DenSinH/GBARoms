@@ -108,7 +108,7 @@ test_3:
         strb r3, [r6]         ; store ID + 1 back to flash at start of flash
 
         ; wait a bit before reading
-        mov r5, #0x80000
+        mov r5, #0x10000
         _test_3_wait:
                 subs r5, #1
                 bne _test_3_wait
@@ -124,6 +124,11 @@ test_4:
         mov r12, #4
 
         send_command #0xF0    ; exit ID mode
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_4_wait:
+                subs r5, #1
+                bne _test_4_wait
 
         ldrb r2, [r6]         ; load value
         cmp r2, r3            ; compare to initial written value
