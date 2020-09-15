@@ -86,6 +86,12 @@ test_2:
 
         strb r1, [r7]        ; write byte
 
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_2_wait:
+                subs r5, #1
+                bne _test_2_wait
+
         ldrb r2, [r7]        ; read same address
         cmp r1, r2
         bne fail_test
@@ -101,6 +107,7 @@ test_3:
         send_command #0xA0    ; prepare write
         strb r3, [r6]         ; store ID + 1 back to flash at start of flash
 
+        ; (ID can be read immediately)
         ldrb r2, [r6]         ; read back value from flash start (still in ID mode)
                               ; -> r2 = read back value
 
@@ -112,6 +119,13 @@ test_4:
         mov r12, #4
 
         send_command #0xF0    ; exit ID mode
+
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_4_wait:
+                subs r5, #1
+                bne _test_4_wait
+
         ldrb r2, [r6]         ; load value
         cmp r2, r3            ; compare to initial written value
         bne fail_test         ; not equal
@@ -133,6 +147,12 @@ test_5:
         prep_command          ; prepare sending command
         mov r3, #0x30
         strb r3, [r6]         ; clear 1kB section at 0x0000
+
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_5_wait:
+                subs r5, #1
+                bne _test_5_wait
 
         ldrb r3, [r6, r2]     ; load uncleared byte write
         sub r2, #0x1000
@@ -171,6 +191,12 @@ test_7:
         mov r0, #0
         send_command 0xB0       ; bank switch back
         strb r0, [r6]
+
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_7_wait:
+                subs r5, #1
+                bne _test_7_wait
 
         ; read
         ldrb r3, [r6]
@@ -222,6 +248,12 @@ test_stress:
 
                 cmp r2, #0x10000
                 blt stress_test_set_loop
+
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_stress_wait:
+                subs r5, #1
+                bne _test_stress_wait
 
         ; read results
         mov r0, #0
