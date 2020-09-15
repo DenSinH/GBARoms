@@ -97,21 +97,36 @@ test_2:
         bne fail_test
 
 test_3:
-        ; test device Identification mode
+        ; test device Identification mode (enter ID mode > read ID > exit ID mode > store ID + 1 > enter ID mode > read ID again)
         mov r12, #3
 
         send_command #0x90    ; enter ID mode
-        ldrb r1, [r6]         ; -> r1 = ID
-        add r3, r1, #1        ; -> r3 = written value
-
-        send_command #0xA0    ; prepare write
-        strb r3, [r6]         ; store ID + 1 back to flash at start of flash
 
         ; wait a bit before reading
         mov r5, #0x10000
         _test_3_wait:
                 subs r5, #1
                 bne _test_3_wait
+
+        ldrb r1, [r6]         ; -> r1 = ID
+        add r3, r1, #1        ; -> r3 = written value
+        send_command #0xF0    ; exit ID mode
+
+        mov r5, #0x10000
+        _test_3_wait_exit:
+                subs r5, #1
+                bne _test_3_wait_exit
+
+        send_command #0xA0    ; prepare write
+        strb r3, [r6]         ; store ID + 1 back to flash at start of flash
+
+        send_command #0x90    ; enter ID mode again
+
+        ; wait a bit before reading
+        mov r5, #0x10000
+        _test_3_wait_enter:
+                subs r5, #1
+                bne _test_3_wait_enter
 
         ldrb r2, [r6]         ; read back value from flash start (still in ID mode)
                               ; -> r2 = read back value
