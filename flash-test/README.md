@@ -15,3 +15,5 @@ If you passed all tests: `Passed all tests`
 If you failed a test: `Failed test XXXXXXXX`, where `XXXXXXXX` is the ID for the test you failed
 
 If you failed a test, a value in the top left might appear. This is the address offset from `0E000000` where your output differed from the expected output.
+
+If you get a black screen, it is likely that clearing the flash chip failed in the very first test. I keep polling the first address there, so make sure that that gets cleared to `0xff` as well!

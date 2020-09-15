@@ -31,8 +31,19 @@ test_setup:
 test_0:
         mov r12, #0
         ; clear entire chip
+        ; first store a byte at 0, then poll that until it becomes 0xff
+        mov r0, #0
+        send_command 0xA0    ; prepare write
+        strb r0, [r6]
+
         send_command 0x80    ; prep erase
         send_command 0x10    ; erase entire chip
+
+        ; poll until clear is finished
+        _clear_poll:
+                ldrb r0, [r6]
+                cmp r0, #0xff
+                bne _clear_poll
 
         mov r0, #0
         mov r1, #0           ; used for drawing wrong address
