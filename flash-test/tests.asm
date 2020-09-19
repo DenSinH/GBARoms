@@ -324,6 +324,8 @@ test_stress:
         b pass_test
 
 fail_test:
+        ; store register data to be viewed on freeze
+        stmfd sp!, { r0-r12 }
         mov r0, #30
         mov r1, #70
         set_word r2, MEM_ROM + _fail_text
@@ -334,6 +336,7 @@ fail_test:
         mov r2, r12
         bl draw_hex_value                           ; draw test number
 
+        ldmfd sp!, { r0-r12 }
         b exit
 
 pass_test:
