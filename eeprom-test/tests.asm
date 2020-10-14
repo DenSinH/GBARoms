@@ -48,8 +48,7 @@ macro read_data {
         local load_loop
 
         ; read data and push to r0, r1 (8 bytes (stored as 2 words), 64 bits)
-        ; r2 holds whether we resolve mirroring (1) or not (0xff)
-
+        
         str r9, [r11]         ; SAD
         mov r5, MEM_EWRAM
         str r5, [r11, \#4]    ; DAD
@@ -140,7 +139,7 @@ test_setup:
         set_word r11, 0x040000D4
 
 test_0:
-        ; read from unused area (initialized to 0xff) with resolved mirroring
+        ; read from unused area (initialized to 0xff)
         mov r12, #0
 
         send_read_address 0x3ff  ; read top 8 bytes
@@ -151,7 +150,7 @@ test_0:
         ; bne fail_test
 
 test_1:
-        ; basic read/write test (with mirroring resolved)
+        ; basic read/write test
         mov r12, #1
 
         set_word r0, 0x69696969
@@ -188,8 +187,6 @@ test_2:
 
         write_data 0x0001         ; write to second entry
 
-        ; resolve mirroring
-        mov r2, #1
         send_read_address 0x0001
         read_data
 
