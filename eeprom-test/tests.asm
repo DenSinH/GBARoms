@@ -147,7 +147,7 @@ test_0:
 
         cmp r0, #0xffffffff
         cmpeq r1, #0xffffffff
-        ; bne fail_test
+        bne fail_test
 
 test_1:
         ; basic read/write test
