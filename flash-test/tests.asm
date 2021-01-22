@@ -156,7 +156,7 @@ test_5:
 
         mov r2, #0x69
         send_command 0xA0     ; write single byte
-        strb r2, [r6]         ; write to start of flash
+        strb r2, [r6, r2]     ; write to start of flash
 
         add r2, #0x1000
         send_command 0xA0     ; write single byte
