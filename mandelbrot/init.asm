@@ -20,9 +20,9 @@ init:
 
         mov r1, #8
         lsl r1, r7    ; ROM
-        mov r2, ((palette + (2 * PALETTE_LENGTH)) and 0xff00) shr 8
+        mov r2, (palette and 0xff00) shr 8
         lsl r2, r6
-        add r2, ((palette + (2 * PALETTE_LENGTH)) and 0x00ff)
+        add r2, (palette and 0x00ff)
         add r1, r2
         str r1, [r0]
 
@@ -39,9 +39,8 @@ init:
 
         add r0, #2  ; DMA3CNT_H
         ; start the DMA transfer
-        mov r1, #0x80
+        mov r1, #0x80 ; DMA immediate, 16 bit, increment source
         lsl r1, r6
-        add r1, #0x80 ; DMA immediate, 16 bit, decrement source
         strh r1, [r0]
 
         ; set r0 to DISPCNT
@@ -61,33 +60,31 @@ init:
         bx lr
 
 palette:
-     dh 0x0000   ; bd: black
-     dh 0x7fff   ;  0 white
-     dh 0x631f   ;  1 light red 1
-     dh 0x421f   ;  2 light red 2
-     dh 0x211f   ;  3 light red 3
-     dh 0x001f   ;  4 red
-     dh 0x011f   ;  5 red~orange
-     dh 0x021f   ;  6 red~orange
-     dh 0x031f   ;  7 orange~yellow
-     dh 0x03ff   ;  8 yellow
-     dh 0x03f8   ;  9 yellow~green
-     dh 0x03f0   ; 10 yellow~green
-     dh 0x03e8   ; 11 yellow~green
-     dh 0x03e0   ; 12 green
-     dh 0x23e0   ; 13 green~cyan
-     dh 0x43e0   ; 14 green~cyan
-     dh 0x63e0   ; 15 green~cyan
-     dh 0x7fe0   ; 16 cyan
-     dh 0x7f00   ; 17 cyan~blue
-     dh 0x7e00   ; 18 cyan~blue
-     dh 0x7d00   ; 19 cyan~blue
-     dh 0x7c00   ; 20 blue
-     dh 0x7c08   ; 21 blue~purple
-     dh 0x7c10   ; 22 blue~purple
-     dh 0x7c18   ; 23 purple~magenta
-     dh 0x7c1f   ; 24 pink
      dh 0x0000   ; 25 overflow (black)
-
-
-
+     dh 0x7c1f   ; 24 pink
+     dh 0x7c18   ; 23 purple~magenta
+     dh 0x7c10   ; 22 blue~purple
+     dh 0x7c08   ; 21 blue~purple
+     dh 0x7c00   ; 20 blue
+     dh 0x7d00   ; 19 cyan~blue
+     dh 0x7e00   ; 18 cyan~blue
+     dh 0x7f00   ; 17 cyan~blue
+     dh 0x7fe0   ; 16 cyan
+     dh 0x63e0   ; 15 green~cyan
+     dh 0x43e0   ; 14 green~cyan
+     dh 0x23e0   ; 13 green~cyan
+     dh 0x03e0   ; 12 green
+     dh 0x03e8   ; 11 yellow~green
+     dh 0x03f0   ; 10 yellow~green
+     dh 0x03f8   ;  9 yellow~green
+     dh 0x03ff   ;  8 yellow
+     dh 0x031f   ;  7 orange~yellow
+     dh 0x021f   ;  6 red~orange
+     dh 0x011f   ;  5 red~orange
+     dh 0x001f   ;  4 red
+     dh 0x211f   ;  3 light red 3
+     dh 0x421f   ;  2 light red 2
+     dh 0x631f   ;  1 light red 1
+     dh 0x7fff   ;  0 white
+     dh 0x0000   ; bd: black
+     
